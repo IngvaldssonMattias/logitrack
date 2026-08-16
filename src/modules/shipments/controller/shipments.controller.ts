@@ -28,7 +28,7 @@ export const getShipmentHandler = async (
   try {
     const shipments = await ShipmentService.getAllShipment();
 
-    res.status(201).json({
+    res.status(200).json({
       status: "success",
       data: {
         shipments,
