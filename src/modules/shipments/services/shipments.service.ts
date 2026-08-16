@@ -32,4 +32,12 @@ export class ShipmentService {
       }
     );
   }
+
+  static async deleteShipment(id: string) {
+    if (!mongoose.isValidObjectId(id)) {
+      return null;
+    }
+
+    return await Shipment.findByIdAndDelete(id);
+  }
 }
