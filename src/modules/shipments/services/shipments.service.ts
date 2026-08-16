@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { CreateShipmentInput } from "../schemas/shipments.schema";
+import { CreateShipmentInput, updateShipmentInput } from "../schemas/shipments.schema";
 import { Shipment } from "../models/shipments.model";
 
 export class ShipmentService {
@@ -16,5 +16,20 @@ export class ShipmentService {
       return null;
     }
     return await Shipment.findById(id);
+  }
+
+  static async updateShipment(id: string, data: updateShipmentInput) {
+    if (!mongoose.isValidObjectId(id)) {
+      return null;
+    }
+
+    return await Shipment.findByIdAndUpdate(
+      id,
+      data,
+      { 
+        returnDocument: "after",
+        runValidators: true,
+      }
+    );
   }
 }
