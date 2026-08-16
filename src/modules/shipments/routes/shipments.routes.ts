@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createShipmentHandler, getShipmentHandler, getShipmentByIdHandler, updateShipmentHandler } from "../controller/shipments.controller";
+import { createShipmentHandler, getShipmentHandler, getShipmentByIdHandler, updateShipmentHandler, deleteShipmentHandler } from "../controller/shipments.controller";
 import { validateRequest } from "../../../core/middleware/validateRequest";
 import { createShipmentSchema, updateShipmentSchema } from "../schemas/shipments.schema";
 
@@ -11,5 +11,7 @@ router.get("/", getShipmentHandler);
 router.get("/:id", getShipmentByIdHandler);
 
 router.patch("/:id", validateRequest(updateShipmentSchema), updateShipmentHandler);
+
+router.delete("/:id", deleteShipmentHandler)
 
 export default router;

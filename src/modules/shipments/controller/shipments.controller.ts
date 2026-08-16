@@ -97,3 +97,29 @@ export const updateShipmentHandler = async (
         next(error);
     }
 };
+
+export const deleteShipmentHandler = async (
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const shipment = await ShipmentService.deleteShipment(req.params.id);
+
+    if (!shipment) {
+      res.status(404).json({
+        status: "fail",
+        message: "Shipment not found",
+      });
+
+      return;
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Shipment deleted successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
