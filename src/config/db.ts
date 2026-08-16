@@ -1,11 +1,12 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
+import { env } from "./env";
 
 export const connectDB = async (): Promise<void> => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/logitrack');
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    const connect = await mongoose.connect(env.DATABASE_URL);
+    console.log(`MongoDB Connected: ${connect.connection.host}`);
   } catch (error) {
-    console.error(`Error: ${error}`);
+    console.error("MongoDB connection failed:", error);
     process.exit(1);
   }
 };
