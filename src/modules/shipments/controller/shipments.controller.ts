@@ -38,3 +38,31 @@ export const getShipmentHandler = async (
     next(error);
   }
 };
+
+export const getShipmentByIdHandler = async (
+    req: Request<{ id: string }>,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const shipment = await ShipmentService.getShipmentById(req.params.id);
+
+        if (!shipment) {
+            res.status(404).json({
+                status: "fail",
+                message: "Shipment not found",
+            });
+
+            return;
+        }
+
+        res.status(200).json({
+            status: "success",
+            data: {
+                shipment,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
