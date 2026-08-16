@@ -24,6 +24,43 @@ export const createShipmentSchema = z.object({
     }),
 });
 
+export const updateShipmentSchema = z.object({
+    body: z.object({
+        senderAddress: z
+        .string()
+        .min(1, "Sender address is required")
+        .optional(),
+
+        destinationAddress: z
+        .string()
+        .min(1, "Destination address is required")
+        .optional(),
+
+        weightInKg: z
+        .number()
+        .positive("Weight must be greater than 0")
+        .optional(),
+
+        estimatedDelivery: z.coerce.date({
+            message: "Estimated delivery must be a valid date",
+        }).optional(),
+
+        status: z
+        .enum(["PENDING", "IN_TRANSIT", "DELAYED", "DELIVERED"])
+        .optional(),
+    })
+    .refine(
+        (data) => Object.keys(data).length > 0,
+        {
+            message: "At least one field is required to update a shipment",
+        }
+    ),
+});
+
+export type updateShipmentInput = z.infer<
+typeof updateShipmentSchema
+>["body"];
+
 export type CreateShipmentInput = z.infer<
     typeof createShipmentSchema
 >["body"];

@@ -39,6 +39,11 @@ const shipmentSchema = new Schema<iShipment>(
       type: Number,
       required: true,
     },
+
+    estimatedDelivery: {
+      type: Date,
+      required: true,
+    },
   },
   {
     timestamps: true,
