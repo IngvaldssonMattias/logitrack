@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import { ShipmentService } from "../shipments.service";
 import { Shipment } from "../../models/shipments.model";
-import { AppError } from "../../../../core/errors/AppError";
 
 describe("ShipmentService", () => {
   beforeAll(async () => {
@@ -77,9 +76,7 @@ describe("ShipmentService", () => {
   });
 
   it("should throw AppError for an invalid shipment id", async () => {
-    await expect(
-      ShipmentService.getShipmentById("abc"),
-    ).rejects.toMatchObject({
+    await expect(ShipmentService.getShipmentById("abc")).rejects.toMatchObject({
       statusCode: 400,
       message: "Invalid shipment ID",
     });
@@ -142,11 +139,34 @@ describe("ShipmentService", () => {
   });
 
   it("should throw AppError when deleting with an invalid shipment id", async () => {
-    await expect(
-      ShipmentService.deleteShipment("abc"),
-    ).rejects.toMatchObject({
+    await expect(ShipmentService.deleteShipment("abc")).rejects.toMatchObject({
       statusCode: 400,
       message: "Invalid shipment ID",
     });
   });
+
+  it("should throw AppError when updating a shipment that does not exist", async () => {
+    const validId = new mongoose.Types.ObjectId().toString();
+
+    await expect(
+      ShipmentService.updateShipment(validId, {
+        weightInKg: 15,
+      }),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      message: "Shipment not found",
+    });
+  });
+
+  it("should throw AppError when deleting a shipment that does not exits", async () => {
+    const validId = new mongoose.Types.ObjectId().toString();
+
+    await expect(
+      ShipmentService.deleteShipment(validId),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      message: "Shipment not found",
+    });
+  });
+  
 });
