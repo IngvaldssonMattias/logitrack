@@ -1,4 +1,5 @@
 import { Router } from "express";
+
 import {
   createShipmentHandler,
   getShipmentHandler,
@@ -9,20 +10,27 @@ import {
 
 import {
   createShipmentSchema,
-  updateShipmentSchema,
   shipmentIdSchema,
-  updateShipmentRequestSchema
+  updateShipmentRequestSchema,
 } from "../schemas/shipments.schema";
 
 import { validateRequest } from "../../../core/middleware/validateRequest";
 
 const router = Router();
 
-router.post("/", validateRequest(createShipmentSchema), createShipmentHandler);
+router.post(
+  "/",
+  validateRequest(createShipmentSchema),
+  createShipmentHandler,
+);
 
 router.get("/", getShipmentHandler);
 
-router.get("/:id", validateRequest(shipmentIdSchema), getShipmentByIdHandler);
+router.get(
+  "/:id",
+  validateRequest(shipmentIdSchema),
+  getShipmentByIdHandler,
+);
 
 router.patch(
   "/:id",
@@ -30,6 +38,10 @@ router.patch(
   updateShipmentHandler,
 );
 
-router.delete("/:id", validateRequest(shipmentIdSchema), deleteShipmentHandler);
+router.delete(
+  "/:id",
+  validateRequest(shipmentIdSchema),
+  deleteShipmentHandler,
+);
 
 export default router;

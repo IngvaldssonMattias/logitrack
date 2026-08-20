@@ -8,7 +8,7 @@ describe("ShipmentService", () => {
     await mongoose.connect(process.env.DATABASE_URL!);
   });
 
-  afterEach(async () => {
+  beforeEach(async () => {
     await Shipment.deleteMany({});
   });
 

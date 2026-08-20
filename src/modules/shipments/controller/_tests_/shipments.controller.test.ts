@@ -2,7 +2,7 @@ import request from "supertest";
 import mongoose from "mongoose";
 import app from "../../../../app";
 import { Shipment } from "../../models/shipments.model";
-import { afterEach } from "node:test";
+import { beforeEach } from "node:test";
 import { ShipmentService } from "../../services/shipments.service";
 
 describe("Shipment API", () => {
@@ -10,7 +10,7 @@ describe("Shipment API", () => {
     await mongoose.connect(process.env.DATABASE_URL!);
   });
 
-  afterEach(async () => {
+  beforeEach(async () => {
     await Shipment.deleteMany({});
   });
 
@@ -156,6 +156,30 @@ it("should return 400 when getting a shipment with an invalid id", async () => {
   expect(response.status).toBe(400);
   expect(response.body.status).toBe("fail");
   expect(response.body.message).toBe("Invalid shipment ID");
+});
+
+it("should return 404 when getting a shipment that does not exist", async () => {
+  const nonExistingId = new mongoose.Types.ObjectId();
+
+  const response = await request(app).get(
+    `/api/v1/shipments/${nonExistingId}`,
+  );
+
+  expect(response.status).toBe(404);
+  expect(response.body.status).toBe("fail");
+  expect(response.body.message).toBe("Shipment not found");
+});
+
+it("should return 500 when an unexpected error occurs", async () => {
+  const originalFind = Shipment.find();
+
+  Shipment.find = jest.fn().mockRejectedValue(new Error("Database failure"));
+
+  const response = await request(app).get("/api/v1/shipments");
+
+  expect(response.status).toBe(500);
+  expect(response.body.status).toBe("error");
+  expect(response.body.message).toBe("Something went wrong");
 });
 
 });
