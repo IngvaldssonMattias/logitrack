@@ -36,6 +36,7 @@ describe("Shipment API", () => {
     });
 
     const response = await request(app).get("/api/v1/shipments");
+    
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe("success");

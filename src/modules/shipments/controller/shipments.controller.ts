@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ShipmentService } from "../services/shipments.service";
+import { CreateShipmentInput, updateShipmentInput } from "../schemas/shipments.schema";
 
 export const createShipmentHandler = async (
   req: Request,
@@ -7,7 +8,9 @@ export const createShipmentHandler = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const shipment = await ShipmentService.createShipment(req.body);
+    const shipment = await ShipmentService.createShipment(
+      req.validated!.body as CreateShipmentInput,
+    );
 
     res.status(201).json({
       status: "success",
@@ -40,71 +43,73 @@ export const getShipmentHandler = async (
 };
 
 export const getShipmentByIdHandler = async (
-    req: Request<{ id: string }>,
-    res: Response,
-    next: NextFunction
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction,
 ): Promise<void> => {
-    try {
-        const shipment = await ShipmentService.getShipmentById(req.params.id);
+  try {
+    const shipment = await ShipmentService.getShipmentById( req.validated!.params!.id, );
 
-        if (!shipment) {
-            res.status(404).json({
-                status: "fail",
-                message: "Shipment not found",
-            });
+    if (!shipment) {
+      res.status(404).json({
+        status: "fail",
+        message: "Shipment not found",
+      });
 
-            return;
-        }
-
-        res.status(200).json({
-            status: "success",
-            data: {
-                shipment,
-            },
-        });
-    } catch (error) {
-        next(error);
+      return;
     }
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        shipment,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const updateShipmentHandler = async (
-    req: Request<{ id: string }>,
-    res: Response,
-    next: NextFunction
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction,
 ): Promise<void> => {
-    try {
-        const shipment = await ShipmentService.updateShipment(
-            req.params.id,
-            req.body
-        );
+  try {
+    const shipment = await ShipmentService.updateShipment(
+      (req.validated!.params as { id: string }).id,
+      req.validated!.body as updateShipmentInput,
+    );
 
-        if (!shipment) {
-            res.status(404).json({
-                status: "fail",
-                message: "Shipment not found",
-            });
+    if (!shipment) {
+      res.status(404).json({
+        status: "fail",
+        message: "Shipment not found",
+      });
 
-            return;
-        }
-
-        res.status(200).json({
-            status: "success",
-            data: {
-                shipment,
-            },
-        });
-    } catch (error) {
-        next(error);
+      return;
     }
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        shipment,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const deleteShipmentHandler = async (
   req: Request<{ id: string }>,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   try {
-    const shipment = await ShipmentService.deleteShipment(req.params.id);
+    const shipment = await ShipmentService.deleteShipment(
+      (req.validated!.params as { id: string }).id,
+    );
 
     if (!shipment) {
       res.status(404).json({

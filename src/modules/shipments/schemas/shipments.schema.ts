@@ -57,6 +57,24 @@ export const updateShipmentSchema = z.object({
     ),
 });
 
+export const shipmentIdSchema = z.object({
+    params: z.object({
+        id: z.string().min(1, "Shipment id is required"),
+    }),
+});
+
+export const updateShipmentRequestSchema = z.object({
+    params: z.object({
+        id: z.string().min(1, "Shipment id is required"),
+    }),
+
+    body: updateShipmentSchema.shape.body,
+});
+
+export type UpdateShipmentRequestInput = z.infer<
+typeof updateShipmentRequestSchema
+>;
+
 export type updateShipmentInput = z.infer<
 typeof updateShipmentSchema
 >["body"];

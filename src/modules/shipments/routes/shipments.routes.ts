@@ -1,17 +1,35 @@
 import { Router } from "express";
-import { createShipmentHandler, getShipmentHandler, getShipmentByIdHandler, updateShipmentHandler, deleteShipmentHandler } from "../controller/shipments.controller";
+import {
+  createShipmentHandler,
+  getShipmentHandler,
+  getShipmentByIdHandler,
+  updateShipmentHandler,
+  deleteShipmentHandler,
+} from "../controller/shipments.controller";
+
+import {
+  createShipmentSchema,
+  updateShipmentSchema,
+  shipmentIdSchema,
+  updateShipmentRequestSchema
+} from "../schemas/shipments.schema";
+
 import { validateRequest } from "../../../core/middleware/validateRequest";
-import { createShipmentSchema, updateShipmentSchema } from "../schemas/shipments.schema";
 
 const router = Router();
 
 router.post("/", validateRequest(createShipmentSchema), createShipmentHandler);
 
 router.get("/", getShipmentHandler);
-router.get("/:id", getShipmentByIdHandler);
 
-router.patch("/:id", validateRequest(updateShipmentSchema), updateShipmentHandler);
+router.get("/:id", validateRequest(shipmentIdSchema), getShipmentByIdHandler);
 
-router.delete("/:id", deleteShipmentHandler)
+router.patch(
+  "/:id",
+  validateRequest(updateShipmentRequestSchema),
+  updateShipmentHandler,
+);
+
+router.delete("/:id", validateRequest(shipmentIdSchema), deleteShipmentHandler);
 
 export default router;

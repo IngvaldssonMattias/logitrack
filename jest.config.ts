@@ -6,6 +6,7 @@ const config: Config = {
     roots: ["<rootDir>/src"],
     testMatch: ["**/*.test.ts"],
     setupFiles: ["<rootDir>/src/test/setup.ts"],
+    maxWorkers: 1,
 };
 
 export default config;

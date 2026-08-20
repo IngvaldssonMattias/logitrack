@@ -9,29 +9,17 @@ export const errorHandler = (
 ): void => {
   if (error instanceof AppError) {
     res.status(error.statusCode).json({
-      status: "error",
+      status: error.status,
       message: error.message,
     });
 
     return;
   }
 
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === 11000
-  ) {
-    res.status(409).json({
-      status: "fail",
-      message: "Tracking number already exists",
-    });
-  }
-
   console.error(error);
 
   res.status(500).json({
     status: "error",
-    message: "Internal server error",
+    message: "Something went wrong",
   });
 };

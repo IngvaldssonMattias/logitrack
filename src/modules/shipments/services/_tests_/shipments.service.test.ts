@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { ShipmentService } from "../shipments.service";
 import { Shipment } from "../../models/shipments.model";
+import { AppError } from "../../../../core/errors/AppError";
 
 describe("ShipmentService", () => {
   beforeAll(async () => {
@@ -75,10 +76,13 @@ describe("ShipmentService", () => {
     expect(shipment?.destinationAddress).toBe("Gothenburg, Sweden");
   });
 
-  it("should return null for an invalid shipment id", async () => {
-    const shipment = await ShipmentService.getShipmentById("abc");
-
-    expect(shipment).toBeNull();
+  it("should throw AppError for an invalid shipment id", async () => {
+    await expect(
+      ShipmentService.getShipmentById("abc"),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      message: "Invalid shipment ID",
+    });
   });
 
   it("should update a shipment", async () => {
@@ -102,12 +106,15 @@ describe("ShipmentService", () => {
     expect(updatedShipment?.trackingNumber).toBe("TEST300001");
   });
 
-  it("should return null when updating with an invalid shipment id", async () => {
-    const updatedShipment = await ShipmentService.updateShipment("abc", {
-      weightInKg: 15,
+  it("should throw AppError when updating with an invalid shipment id", async () => {
+    await expect(
+      ShipmentService.updateShipment("abc", {
+        weightInKg: 15,
+      }),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      message: "Invalid shipment ID",
     });
-
-    expect(updatedShipment).toBeNull();
   });
 
   it("should delete a shipment", async () => {
@@ -126,16 +133,20 @@ describe("ShipmentService", () => {
     expect(deletedShipment).toBeDefined();
     expect(deletedShipment?.trackingNumber).toBe("TEST400001");
 
-    const shipment = await ShipmentService.getShipmentById(
-      createdShipment._id.toString(),
-    );
-
-    expect(shipment).toBeNull();
+    await expect(
+      ShipmentService.getShipmentById(createdShipment._id.toString()),
+    ).rejects.toMatchObject({
+      statusCode: 404,
+      message: "Shipment not found",
+    });
   });
 
-  it("should return null when deleting with an invalid shipment id", async () => {
-    const deletedShipment = await ShipmentService.deleteShipment("abc");
-
-    expect(deletedShipment).toBeNull();
+  it("should throw AppError when deleting with an invalid shipment id", async () => {
+    await expect(
+      ShipmentService.deleteShipment("abc"),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      message: "Invalid shipment ID",
+    });
   });
 });
