@@ -182,4 +182,31 @@ it("should return 500 when an unexpected error occurs", async () => {
   expect(response.body.message).toBe("Something went wrong");
 });
 
+it("Should return 409 when tracking number already exists", async () => {
+  await Shipment.create({
+    trackingNumber: "DUPLICATE123",
+    senderAddress: "Stockholm, Sweden",
+    destinationAddress: "Gothenburg, Sweden",
+    weightInKg: 10,
+    estimatedDelivery: new Date("2026-08-25"),
+  });
+
+  const response = await request(app)
+  .post("/api/v1/shipments")
+  .send({
+    trackingNumber: "DUPLICATE123",
+    senderAddress: "Malmö, Sweden",
+    destinationAddress: "Uppsala, Sweden",
+    weightInKg: 5,
+    estimatedDelivery: "2026-08-26",
+  });
+
+  expect(response.status).toBe(409);
+
+  expect(response.body).toEqual({
+    status: "fail",
+    message: "Tracking number already exists",
+  });
+});
+
 });
