@@ -147,4 +147,15 @@ describe("Shipment API", () => {
     expect(response.body.status).toBe("fail");
     expect(response.body.message).toBe("Shipment not found");
   });
+
+it("should return 400 when getting a shipment with an invalid id", async () => {
+  const response = await request(app).get(
+    "/api/v1/shipments/not-a-valid-id",
+  );
+
+  expect(response.status).toBe(400);
+  expect(response.body.status).toBe("fail");
+  expect(response.body.message).toBe("Invalid shipment ID");
+});
+
 });
