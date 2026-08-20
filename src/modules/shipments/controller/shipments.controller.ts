@@ -1,16 +1,17 @@
 import { Request, Response, NextFunction } from "express";
+import {
+  CreateShipmentInput,
+  updateShipmentInput,
+} from "../schemas/shipments.schema";
 import { ShipmentService } from "../services/shipments.service";
-import { CreateShipmentInput, updateShipmentInput } from "../schemas/shipments.schema";
 
 export const createShipmentHandler = async (
-  req: Request,
+  req: Request<unknown, unknown, CreateShipmentInput>,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const shipment = await ShipmentService.createShipment(
-      req.validated!.body as CreateShipmentInput,
-    );
+    const shipment = await ShipmentService.createShipment(req.body);
 
     res.status(201).json({
       status: "success",
@@ -48,7 +49,9 @@ export const getShipmentByIdHandler = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const shipment = await ShipmentService.getShipmentById( req.validated!.params!.id, );
+    const shipment = await ShipmentService.getShipmentById(
+      req.params.id,
+    );
 
     if (!shipment) {
       res.status(404).json({
@@ -71,14 +74,18 @@ export const getShipmentByIdHandler = async (
 };
 
 export const updateShipmentHandler = async (
-  req: Request<{ id: string }>,
+  req: Request<
+    { id: string },
+    unknown,
+    updateShipmentInput
+  >,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
   try {
     const shipment = await ShipmentService.updateShipment(
-      (req.validated!.params as { id: string }).id,
-      req.validated!.body as updateShipmentInput,
+      req.params.id,
+      req.body,
     );
 
     if (!shipment) {
@@ -108,7 +115,7 @@ export const deleteShipmentHandler = async (
 ): Promise<void> => {
   try {
     const shipment = await ShipmentService.deleteShipment(
-      (req.validated!.params as { id: string }).id,
+      req.params.id,
     );
 
     if (!shipment) {
