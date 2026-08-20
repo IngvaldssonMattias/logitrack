@@ -5,7 +5,8 @@ const config: Config = {
     testEnvironment: "node",
     roots: ["<rootDir>/src"],
     testMatch: ["**/*.test.ts"],
-    setupFiles: ["<rootDir>/src/test/setup.ts"],
+    setupFilesAfterEnv: ["<rootDir>/src/test/setup.ts"],
+    maxWorkers: 1,
 };
 
 export default config;

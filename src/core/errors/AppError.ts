@@ -1,19 +1,19 @@
-import { object } from "zod";
-
 export class AppError extends Error {
-    public readonly statusCode: number;
-    public readonly isOperational: boolean;
+  statusCode: number;
+  status: "fail" | "error";
+  isOperational: boolean;
 
-    constructor(
-        message: string,
-        statusCode: number = 500,
-        isOperational: boolean = true,
-    ) {
-        super(message);
+  constructor(
+    message: string,
+    statusCode: number,
+    status: "fail" | "error" = "fail",
+  ) {
+    super(message);
 
-        this.statusCode = statusCode;
-        this.isOperational = isOperational;
+    this.statusCode = statusCode;
+    this.status = status;
+    this.isOperational = true;
 
-        Object.setPrototypeOf(this, new.target.prototype);
-    }
+    Error.captureStackTrace(this, this.constructor);
+  }
 }
