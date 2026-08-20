@@ -2,8 +2,7 @@ import request from "supertest";
 import mongoose from "mongoose";
 import app from "../../../../app";
 import { Shipment } from "../../models/shipments.model";
-import { beforeEach } from "node:test";
-import { ShipmentService } from "../../services/shipments.service";
+
 
 describe("Shipment API", () => {
   beforeAll(async () => {
@@ -107,7 +106,7 @@ describe("Shipment API", () => {
     });
 
     const response = await request(app)
-    .patch(`/api/v1/shipments/${createdShipment._id} `)
+    .patch(`/api/v1/shipments/${createdShipment._id}`)
     .send({
         weightInKg: -5,
     });
@@ -126,7 +125,7 @@ describe("Shipment API", () => {
     });
 
     const response = await request(app)
-    .delete(`/api/v1/shipments/${createdShipment._id} `);
+    .delete(`/api/v1/shipments/${createdShipment._id}`);
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe("success");

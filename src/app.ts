@@ -7,6 +7,7 @@ import shipmentRoutes from "./modules/shipments/routes/shipments.routes";
 import { errorHandler } from "./core/middleware/errorHandler";
 import { swaggerSpec } from "./config/swagger";
 import userRouter from "./modules/users/routes/users.routes";
+import authRoutes from "./modules/auth/routes/auth.routes";
 
 
 
@@ -18,13 +19,11 @@ app.use(express.json());
 
 // Users
 app.use("/api/v1/users", userRouter);
+app.use("/auth", authRoutes);
 
 
 // Swagger documentation
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-// API Modules
-app.use("/api/v1/shipments", shipmentRoutes);
 
 // API Modules
 app.use("/api/v1/shipments", shipmentRoutes);
