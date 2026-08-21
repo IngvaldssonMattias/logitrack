@@ -1,22 +1,12 @@
 import { Router } from "express";
-
-import {
-  createShipmentHandler,
-  getShipmentHandler,
-  getShipmentByIdHandler,
-  updateShipmentHandler,
-  deleteShipmentHandler,
-} from "../controller/shipments.controller";
-
-import {
-  createShipmentSchema,
-  shipmentIdSchema,
-  updateShipmentRequestSchema,
-} from "../schemas/shipments.schema";
-
+import { createShipmentHandler, getShipmentHandler, getShipmentByIdHandler, updateShipmentHandler, deleteShipmentHandler, } from "../controller/shipments.controller";
+import { createShipmentSchema, shipmentIdSchema, updateShipmentRequestSchema } from "../schemas/shipments.schema";
 import { validateRequest } from "../../../core/middleware/validateRequest";
+import { authenticate, requireRole } from "../../auth/middleware/authMiddleware";
 
 const router = Router();
+
+router.use(authenticate);
 
 router.post(
   "/",
@@ -33,14 +23,13 @@ router.get(
 );
 
 router.patch(
-  "/:id",
+  "/:id", requireRole("ADMIN"),
   validateRequest(updateShipmentRequestSchema),
   updateShipmentHandler,
 );
 
 router.delete(
-  "/:id",
-  validateRequest(shipmentIdSchema),
+  "/:id", requireRole("ADMIN"), validateRequest(shipmentIdSchema),
   deleteShipmentHandler,
 );
 
