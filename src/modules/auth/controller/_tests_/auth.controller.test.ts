@@ -10,23 +10,23 @@ describe("AuthController", () => {
 
   it("should login a user and return 200", async () => {
     const user = {
-      _id: "123",
+      id: "123",
       name: "John Doe",
       email: "john@example.com",
       role: "USER" as const,
       passwordHash: "hashed-password",
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    const safeUser = {
-      _id: "123",
-      name: "John Doe",
-      email: "john@example.com",
-      role: "USER" as const,
-    };
+    const accessToken = "access-token";
+    const refreshToken = "refresh-token";
 
     jest.spyOn(LoginService, "login").mockResolvedValue({
-      toObject: () => user,
-    } as never);
+      user,
+      accessToken,
+      refreshToken,
+    });
 
     const req = {
       body: {
@@ -52,7 +52,16 @@ describe("AuthController", () => {
     expect(json).toHaveBeenCalledWith({
       status: "success",
       data: {
-        user: safeUser,
+        user: {
+          id: "123",
+          name: "John Doe",
+          email: "john@example.com",
+          role: "USER",
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+        accessToken,
+        refreshToken,
       },
     });
 
@@ -84,23 +93,16 @@ describe("AuthController", () => {
 
   it("should register a user and return 201", async () => {
     const user = {
-      _id: "123",
+      id: "123",
       name: "John Doe",
       email: "john@example.com",
       role: "USER" as const,
       passwordHash: "hashed-password",
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    const safeUser = {
-      _id: "123",
-      name: "John Doe",
-      email: "john@example.com",
-      role: "USER" as const,
-    };
-
-    jest.spyOn(RegisterService, "register").mockResolvedValue({
-      toObject: () => user,
-    } as never);
+    jest.spyOn(RegisterService, "register").mockResolvedValue(user);
 
     const req = {
       body: {
@@ -123,12 +125,21 @@ describe("AuthController", () => {
 
     expect(RegisterService.register).toHaveBeenCalledWith(req.body);
     expect(status).toHaveBeenCalledWith(201);
+
     expect(json).toHaveBeenCalledWith({
       status: "success",
       data: {
-        user: safeUser,
+        user: {
+          id: "123",
+          name: "John Doe",
+          email: "john@example.com",
+          role: "USER",
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
       },
     });
+
     expect(next).not.toHaveBeenCalled();
   });
 

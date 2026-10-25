@@ -1,23 +1,43 @@
-import mongoose from "mongoose";
-import bcrypt from "bcrypt";
+import argon2 from "argon2";
 
+import { db } from "../../../../db";
 import { UserService } from "../users.service";
-import { User } from "../../models/users.models";
+
+jest.mock("../../../../db", () => ({
+  db: {
+    query: {
+      users: {
+        findFirst: jest.fn(),
+      },
+    },
+    insert: jest.fn(),
+  },
+}));
 
 describe("UserService", () => {
-  beforeAll(async () => {
-    await mongoose.connect(process.env.DATABASE_URL!);
-  });
-
-  beforeEach(async () => {
-    await User.deleteMany({});
-  });
-
-  afterAll(async () => {
-    await mongoose.connection.close();
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   it("should create a user", async () => {
+    jest.mocked(db.query.users.findFirst).mockResolvedValue(undefined);
+
+    jest.mocked(db.insert).mockReturnValue({
+      values: jest.fn().mockReturnValue({
+        returning: jest.fn().mockResolvedValue([
+          {
+            id: "user-123",
+            name: "John Doe",
+            email: "john@example.com",
+            passwordHash: "hashed-password",
+            role: "USER",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ]),
+      }),
+    } as never);
+
     const user = await UserService.createUser({
       name: "John Doe",
       email: "john@example.com",
@@ -31,6 +51,30 @@ describe("UserService", () => {
   });
 
   it("should store a hashed password instead of the original password", async () => {
+    jest.mocked(db.query.users.findFirst).mockResolvedValue(undefined);
+
+    let insertedPasswordHash = "";
+
+    jest.mocked(db.insert).mockReturnValue({
+      values: jest.fn().mockImplementation((data) => {
+        insertedPasswordHash = data.passwordHash;
+
+        return {
+          returning: jest.fn().mockResolvedValue([
+            {
+              id: "user-123",
+              name: "John Doe",
+              email: "john@example.com",
+              passwordHash: data.passwordHash,
+              role: "USER",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ]),
+        };
+      }),
+    } as never);
+
     const password = "SecurePassword!123";
 
     const user = await UserService.createUser({
@@ -39,40 +83,70 @@ describe("UserService", () => {
       password,
     });
 
-    expect(user.passwordHash).not.toBe(password);
-    expect(user.passwordHash).toBeDefined();
+    expect(insertedPasswordHash).toBeDefined();
+    expect(insertedPasswordHash).not.toBe(password);
+    expect(insertedPasswordHash).toMatch(/^\$argon2/);
 
-    const passwordMatches = await bcrypt.compare(
-      password,
+    const passwordMatches = await argon2.verify(
       user.passwordHash,
+      password,
     );
 
     expect(passwordMatches).toBe(true);
   });
 
   it("should always create new users with the USER role", async () => {
-    const user = await UserService.createUser({
+    jest.mocked(db.query.users.findFirst).mockResolvedValue(undefined);
+
+    let insertedRole = "";
+
+    jest.mocked(db.insert).mockReturnValue({
+      values: jest.fn().mockImplementation((data) => {
+        insertedRole = data.role;
+
+        return {
+          returning: jest.fn().mockResolvedValue([
+            {
+              id: "user-123",
+              name: "John Doe",
+              email: "john@example.com",
+              passwordHash: data.passwordHash,
+              role: data.role,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ]),
+        };
+      }),
+    } as never);
+
+    await UserService.createUser({
       name: "John Doe",
       email: "john@example.com",
       password: "SecurePassword!123",
     });
 
-    expect(user.role).toBe("USER");
+    expect(insertedRole).toBe("USER");
   });
 
   it("should throw AppError when email already exists", async () => {
-    const userData = {
+    const existingUser = {
+      id: "existing-user",
       name: "John Doe",
       email: "john@example.com",
-      password: "SecurePassword!123",
+      passwordHash: "existing-hash",
+      role: "USER" as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    await UserService.createUser(userData);
+    jest.mocked(db.query.users.findFirst).mockResolvedValue(existingUser);
 
     await expect(
       UserService.createUser({
-        ...userData,
         name: "Jane Doe",
+        email: "john@example.com",
+        password: "SecurePassword!123",
       }),
     ).rejects.toMatchObject({
       statusCode: 409,

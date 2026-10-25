@@ -1,13 +1,43 @@
 import argon2 from "argon2";
+
+import { db } from "../../../../db";
 import { register } from "../auth.register.services";
-import { User } from "../../../users/models/users.models";
 
+jest.mock("../../../../db", () => ({
+  db: {
+    query: {
+      users: {
+        findFirst: jest.fn(),
+      },
+    },
+    insert: jest.fn(),
+  },
+}));
 
-  beforeEach(async () => {
-    await User.deleteMany({});
+describe("register", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   it("should register a new user", async () => {
+    jest.mocked(db.query.users.findFirst).mockResolvedValue(undefined);
+
+    jest.mocked(db.insert).mockReturnValue({
+      values: jest.fn().mockReturnValue({
+        returning: jest.fn().mockResolvedValue([
+          {
+            id: "123",
+            name: "John Doe",
+            email: "john@example.com",
+            passwordHash: "hashed-password",
+            role: "USER",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ]),
+      }),
+    } as never);
+
     const user = await register({
       name: "John Doe",
       email: "john@example.com",
@@ -21,6 +51,30 @@ import { User } from "../../../users/models/users.models";
   });
 
   it("should hash the password", async () => {
+    jest.mocked(db.query.users.findFirst).mockResolvedValue(undefined);
+
+    let insertedPasswordHash = "";
+
+    jest.mocked(db.insert).mockReturnValue({
+      values: jest.fn().mockImplementation((data) => {
+        insertedPasswordHash = data.passwordHash;
+
+        return {
+          returning: jest.fn().mockResolvedValue([
+            {
+              id: "123",
+              name: "John Doe",
+              email: "john@example.com",
+              passwordHash: data.passwordHash,
+              role: "USER",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ]),
+        };
+      }),
+    } as never);
+
     const password = "SecurePassword123!";
 
     const user = await register({
@@ -29,9 +83,9 @@ import { User } from "../../../users/models/users.models";
       password,
     });
 
-    expect(user.passwordHash).toBeDefined();
-    expect(user.passwordHash).not.toBe(password);
-    expect(user.passwordHash).toMatch(/^\$argon2/);
+    expect(insertedPasswordHash).toBeDefined();
+    expect(insertedPasswordHash).not.toBe(password);
+    expect(insertedPasswordHash).toMatch(/^\$argon2/);
 
     const isValidPassword = await argon2.verify(
       user.passwordHash,
@@ -42,28 +96,54 @@ import { User } from "../../../users/models/users.models";
   });
 
   it("should not store the plain text password", async () => {
+    jest.mocked(db.query.users.findFirst).mockResolvedValue(undefined);
+
+    let insertedPasswordHash = "";
+
+    jest.mocked(db.insert).mockReturnValue({
+      values: jest.fn().mockImplementation((data) => {
+        insertedPasswordHash = data.passwordHash;
+
+        return {
+          returning: jest.fn().mockResolvedValue([
+            {
+              id: "123",
+              name: "John Doe",
+              email: "john@example.com",
+              passwordHash: data.passwordHash,
+              role: "USER",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ]),
+        };
+      }),
+    } as never);
+
     const password = "SecurePassword123!";
 
-    const user = await register({
+    await register({
       name: "John Doe",
       email: "john@example.com",
       password,
     });
 
-    const storedUser = await User.findById(user._id).select("+passwordHash");
-
-    expect(storedUser).toBeDefined();
-    expect(storedUser?.passwordHash).not.toBe(password);
+    expect(insertedPasswordHash).toBeDefined();
+    expect(insertedPasswordHash).not.toBe(password);
   });
 
   it("should reject an already registered email", async () => {
-    const userData = {
+    const existingUser = {
+      id: "123",
       name: "John Doe",
       email: "john@example.com",
-      password: "SecurePassword123!",
+      passwordHash: "existing-hash",
+      role: "USER" as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    await register(userData);
+    jest.mocked(db.query.users.findFirst).mockResolvedValue(existingUser);
 
     await expect(
       register({
@@ -78,11 +158,36 @@ import { User } from "../../../users/models/users.models";
   });
 
   it("should always assign the USER role", async () => {
-    const user = await register({
+    jest.mocked(db.query.users.findFirst).mockResolvedValue(undefined);
+
+    let insertedRole = "";
+
+    jest.mocked(db.insert).mockReturnValue({
+      values: jest.fn().mockImplementation((data) => {
+        insertedRole = data.role;
+
+        return {
+          returning: jest.fn().mockResolvedValue([
+            {
+              id: "123",
+              name: "John Doe",
+              email: "john@example.com",
+              passwordHash: "hashed-password",
+              role: data.role,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ]),
+        };
+      }),
+    } as never);
+
+    await register({
       name: "John Doe",
       email: "john@example.com",
       password: "SecurePassword123!",
     });
 
-    expect(user.role).toBe("USER");
+    expect(insertedRole).toBe("USER");
   });
+});

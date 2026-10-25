@@ -1,31 +1,34 @@
-import bcrypt from "bcrypt";
-import { User } from "../models/users.models";
+import argon2 from "argon2";
+import { eq } from "drizzle-orm";
+
+import { db } from "../../../db";
+import { users } from "../../../db/schema";
 import { AppError } from "../../../core/errors/AppError";
 import { CreateUserInput } from "../schemas/users.schema";
 
-const SALT_ROUNDS = 12;
-
 export class UserService {
     static async createUser(data: CreateUserInput) {
-        const existingUser = await User.findOne({
-            email: data.email,
+        const existingUser = await db.query.users.findFirst({
+            where: eq(users.email, data.email),
         });
 
-        if(existingUser) {
+        if (existingUser) {
             throw new AppError("Email already exists", 409);
         }
 
-        const passwordHash = await bcrypt.hash(
-            data.password,
-            SALT_ROUNDS,
-        );
-
-        const user = await User.create({
-            name: data.name,
-            email: data.email,
-            passwordHash,
-            role: "USER",
+        const passwordHash = await argon2.hash(data.password, {
+            type: argon2.argon2id,
         });
+
+        const [user] = await db
+            .insert(users)
+            .values({
+                name: data.name,
+                email: data.email,
+                passwordHash,
+                role: "USER",
+            })
+            .returning();
 
         return user;
     }

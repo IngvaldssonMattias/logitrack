@@ -13,7 +13,7 @@ export const registerHandler = async (
   try {
     const user = await register(req.body);
 
-    const { passwordHash: _passwordHash, ...safeUser } = user.toObject();
+    const { passwordHash: _passwordHash, ...safeUser } = user;
 
     res.status(201).json({
       status: "success",
@@ -34,7 +34,7 @@ export const loginHandler = async (
   try {
     const { user, accessToken, refreshToken } = await login(req.body);
 
-    const { passwordHash: _passwordHash, ...safeUser } = user.toObject();
+    const { passwordHash: _passwordHash, ...safeUser } = user;
 
     res.status(200).json({
       status: "success",
@@ -59,8 +59,7 @@ export const refreshHandler = async (
 
     const result = await refreshAccessToken(refreshToken);
 
-    const { passwordHash: _passwordHash, ...safeUser } = 
-    result.user.toObject();
+    const { passwordHash: _passwordHash, ...safeUser } = result.user;
 
     res.status(200).json({
       status: "success",
@@ -70,15 +69,15 @@ export const refreshHandler = async (
         refreshToken: result.refreshToken,
       },
     });
-  } catch(error) {
+  } catch (error) {
     next(error);
   }
 };
 
-export const logoutHandler = async(
+export const logoutHandler = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const { refreshToken } = req.body;
@@ -87,9 +86,9 @@ export const logoutHandler = async(
 
     res.status(200).json({
       status: "success",
-      message: "Logged out successfully"
+      message: "Logged out successfully",
     });
-  } catch(error) {
+  } catch (error) {
     next(error);
   }
 };

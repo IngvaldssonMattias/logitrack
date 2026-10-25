@@ -1,14 +1,15 @@
 import crypto from "crypto";
 import argon2 from "argon2";
-import { RefreshToken } from "../models/refreshToken.model";
-import mongoose from "mongoose";
+import { and, eq, gt, isNull } from "drizzle-orm";
+
+import { db } from "../../../db";
+import { refreshTokens } from "../../../db/schema";
 import { AppError } from "../../../core/errors/AppError";
-import { NextFunction } from "express";
 
 const REFRESH_TOKEN_EXPIRES_IN_DAYS = 7;
 
 export const createRefreshToken = async (
-  userId: mongoose.Types.ObjectId,
+  userId: string,
 ): Promise<string> => {
   const refreshToken = crypto.randomBytes(64).toString("hex");
 
@@ -19,7 +20,7 @@ export const createRefreshToken = async (
       REFRESH_TOKEN_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000,
   );
 
-  await RefreshToken.create({
+  await db.insert(refreshTokens).values({
     userId,
     tokenHash,
     expiresAt,
@@ -31,10 +32,15 @@ export const createRefreshToken = async (
 export const revokeRefreshToken = async (
   refreshToken: string,
 ): Promise<void> => {
-  const storedTokens = await RefreshToken.find({
-    revokedAt: { $exists: false },
-    expiresAt: { $gt: new Date() },
-  });
+  const storedTokens = await db
+    .select()
+    .from(refreshTokens)
+    .where(
+      and(
+        isNull(refreshTokens.revokedAt),
+        gt(refreshTokens.expiresAt, new Date()),
+      ),
+    );
 
   for (const storedToken of storedTokens) {
     const isValid = await argon2.verify(
@@ -43,8 +49,14 @@ export const revokeRefreshToken = async (
     );
 
     if (isValid) {
-      storedToken.revokedAt = new Date();
-      await storedToken.save();
+      await db
+        .update(refreshTokens)
+        .set({
+          revokedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(refreshTokens.id, storedToken.id));
+
       return;
     }
   }

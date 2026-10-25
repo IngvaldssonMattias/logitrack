@@ -11,7 +11,19 @@ export const createShipmentHandler = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const shipment = await ShipmentService.createShipment(req.body);
+    if (!req.user) {
+      res.status(401).json({
+        status: "fail",
+        message: "Authentication required",
+      });
+
+      return;
+    }
+
+    const shipment = await ShipmentService.createShipment(
+      req.body,
+      req.user.userId,
+    );
 
     res.status(201).json({
       status: "success",
@@ -25,12 +37,24 @@ export const createShipmentHandler = async (
 };
 
 export const getShipmentHandler = async (
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const shipments = await ShipmentService.getAllShipment();
+    if (!req.user) {
+      res.status(401).json({
+        status: "fail",
+        message: "Authentication required",
+      });
+
+      return;
+    }
+
+    const shipments = await ShipmentService.getAllShipment(
+      req.user.userId,
+      req.user.role,
+    );
 
     res.status(200).json({
       status: "success",

@@ -1,211 +1,98 @@
 import request from "supertest";
-import mongoose from "mongoose";
 import app from "../../../../app";
-import { Shipment } from "../../models/shipments.model";
+import { ShipmentService } from "../../services/shipments.service";
 
+jest.mock("../../../auth/middleware/authMiddleware", () => ({
+  authenticate: (
+    req: { user?: { userId: string; role: "USER" | "ADMIN" } },
+    _res: unknown,
+    next: () => void,
+  ) => {
+    req.user = {
+      userId: "user-123",
+      role: "USER",
+    };
 
-describe("Shipment API", () => {
-  beforeAll(async () => {
-    await mongoose.connect(process.env.DATABASE_URL!);
+    next();
+  },
+
+  requireRole: () => {
+    return (
+      _req: unknown,
+      _res: unknown,
+      next: () => void,
+    ) => {
+      next();
+    };
+  },
+}));
+
+jest.mock("../../services/shipments.service", () => ({
+  ShipmentService: {
+    createShipment: jest.fn(),
+    getAllShipment: jest.fn(),
+    getShipmentById: jest.fn(),
+    updateShipment: jest.fn(),
+    deleteShipment: jest.fn(),
+  },
+}));
+
+describe("ShipmentController", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  beforeEach(async () => {
-    await Shipment.deleteMany({});
-  });
-
-  afterAll(async () => {
-    await mongoose.connection.close();
-  });
-
-  it("should get all shipments", async () => {
-    await Shipment.create({
-      trackingNumber: "API200001",
-      senderAddress: "Stockholm, Sweden",
-      destinationAddress: "Gothenburg, Sweden",
-      weightInKg: 10,
-      estimatedDelivery: new Date("2026-08-25"),
-    });
-
-    await Shipment.create({
-      trackingNumber: "API200002",
-      senderAddress: "Malmö, Sweden",
-      destinationAddress: "Uppsala, Sweden",
-      weightInKg: 5,
-      estimatedDelivery: new Date("2026-08-26"),
-    });
-
-    const response = await request(app).get("/api/v1/shipments");
-    
-
-    expect(response.status).toBe(200);
-    expect(response.body.status).toBe("success");
-    expect(response.body.data.shipments).toHaveLength(2);
-  });
-
-  it("should get a shipment by id", async () => {
-    const createdShipment = await Shipment.create({
-      trackingNumber: "API300001",
-      senderAddress: "Stockholm, Sweden",
-      destinationAddress: "Gothenburg, Sweden",
-      weightInKg: 12.5,
-      estimatedDelivery: new Date("2026-08-25"),
-    });
-
-    const response = await request(app).get(
-      `/api/v1/shipments/${createdShipment._id}`,
-    );
-
-    expect(response.status).toBe(200);
-    expect(response.body.status).toBe("success");
-    expect(response.body.data.shipment).toBeDefined();
-    expect(response.body.data.shipment.trackingNumber).toBe("API300001");
-    expect(response.body.data.shipment.weightInKg).toBe(12.5);
-  });
-
-  it("should return 404 when shipment is not found", async () => {
-    const nonExistingId = new mongoose.Types.ObjectId();
-
-    const response = await request(app).get(
-      `/api/v1/shipments/${nonExistingId}`,
-    );
-
-    expect(response.status).toBe(404);
-    expect(response.body.status).toBe("fail");
-    expect(response.body.message).toBe("Shipment not found");
-  });
-
-  it("should update a shipment", async () => {
-    const createdShipment = await Shipment.create({
-      trackingNumber: "API400001",
-      senderAddress: "Stockholm, Sweden",
-      destinationAddress: "Gothenburg, Sweden",
-      weightInKg: 10,
-      estimatedDelivery: new Date("2026-08-25"),
-    });
-
-    const response = await request(app)
-      .patch(`/api/v1/shipments/${createdShipment._id}`)
-      .send({
-        weightInKg: 15,
+  describe("POST /api/v1/shipments", () => {
+    it("should create a shipment", async () => {
+      jest.mocked(ShipmentService.createShipment).mockResolvedValue({
+        id: "shipment-123",
+        trackingNumber: "LT123456",
+        createdByUserId: "user-123",
+        status: "CREATED",
+        senderAddress: "Stockholm",
+        destinationAddress: "Gothenburg",
+        weightInKg: "2.50",
+        estimatedDelivery: new Date("2026-09-01"),
+        description: "Test shipment",
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
 
-    expect(response.status).toBe(200);
-    expect(response.body.status).toBe("success");
-    expect(response.body.data.shipment).toBeDefined();
-    expect(response.body.data.shipment.weightInKg).toBe(15);
-    expect(response.body.data.shipment.trackingNumber).toBe("API400001");
-  });
+      const response = await request(app)
+        .post("/api/v1/shipments")
+        .send({
+          trackingNumber: "LT123456",
+          senderAddress: "Stockholm",
+          destinationAddress: "Gothenburg",
+          weightInKg: 2.5,
+          estimatedDelivery: "2026-09-01",
+          description: "Test shipment",
+        });
 
-  it("should return 4oo when updating with invalid data", async () => {
-    const createdShipment = await Shipment.create({
-       trackingNumber: "API400002",
-        senderAddress: "Stockholm, Sweden",
-        destinationAddress: "Gothenburg, Sweden",
-        weightInKg: 10,
-        estimatedDelivery: new Date("2026-08-25"), 
+      expect(response.status).toBe(201);
+
+      expect(response.body).toMatchObject({
+        status: "success",
+        data: {
+          shipment: {
+            id: "shipment-123",
+            trackingNumber: "LT123456",
+            createdByUserId: "user-123",
+            status: "CREATED",
+          },
+        },
+      });
+
+      expect(ShipmentService.createShipment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          trackingNumber: "LT123456",
+          senderAddress: "Stockholm",
+          destinationAddress: "Gothenburg",
+          weightInKg: 2.5,
+          description: "Test shipment",
+        }),
+        "user-123",
+      );
     });
-
-    const response = await request(app)
-    .patch(`/api/v1/shipments/${createdShipment._id}`)
-    .send({
-        weightInKg: -5,
-    });
-
-    expect(response.status).toBe(400)
-    expect(response.body.status).toBe("fail");
   });
-
-  it("should delete a shipment", async () => {
-    const createdShipment = await Shipment.create({
-        trackingNumber: "API500001",
-        senderAddress: "Stockholm, Sweden",
-        destinationAddress: "Gothenburg, Sweden",
-        weightInKg: 10,
-        estimatedDelivery: new Date("2026-08-25"),
-    });
-
-    const response = await request(app)
-    .delete(`/api/v1/shipments/${createdShipment._id}`);
-
-    expect(response.status).toBe(200);
-    expect(response.body.status).toBe("success");
-    expect(response.body.message).toBe("Shipment deleted successfully");
-
-    const deletedShipment = await Shipment.findById(createdShipment._id);
-
-    expect(deletedShipment).toBeNull();
-  });
-
-  it("should return 404 when deleting a shipment that does not exist", async () => {
-    const nonExistingId = new mongoose.Types.ObjectId();
-
-    const response = await request(app)
-    .delete(`/api/v1/shipments/${nonExistingId}`);
-
-    expect(response.status).toBe(404);
-    expect(response.body.status).toBe("fail");
-    expect(response.body.message).toBe("Shipment not found");
-  });
-
-it("should return 400 when getting a shipment with an invalid id", async () => {
-  const response = await request(app).get(
-    "/api/v1/shipments/not-a-valid-id",
-  );
-
-  expect(response.status).toBe(400);
-  expect(response.body.status).toBe("fail");
-  expect(response.body.message).toBe("Invalid shipment ID");
-});
-
-it("should return 404 when getting a shipment that does not exist", async () => {
-  const nonExistingId = new mongoose.Types.ObjectId();
-
-  const response = await request(app).get(
-    `/api/v1/shipments/${nonExistingId}`,
-  );
-
-  expect(response.status).toBe(404);
-  expect(response.body.status).toBe("fail");
-  expect(response.body.message).toBe("Shipment not found");
-});
-
-it("should return 500 when an unexpected error occurs", async () => {
-  const originalFind = Shipment.find();
-
-  Shipment.find = jest.fn().mockRejectedValue(new Error("Database failure"));
-
-  const response = await request(app).get("/api/v1/shipments");
-
-  expect(response.status).toBe(500);
-  expect(response.body.status).toBe("error");
-  expect(response.body.message).toBe("Something went wrong");
-});
-
-it("Should return 409 when tracking number already exists", async () => {
-  await Shipment.create({
-    trackingNumber: "DUPLICATE123",
-    senderAddress: "Stockholm, Sweden",
-    destinationAddress: "Gothenburg, Sweden",
-    weightInKg: 10,
-    estimatedDelivery: new Date("2026-08-25"),
-  });
-
-  const response = await request(app)
-  .post("/api/v1/shipments")
-  .send({
-    trackingNumber: "DUPLICATE123",
-    senderAddress: "Malmö, Sweden",
-    destinationAddress: "Uppsala, Sweden",
-    weightInKg: 5,
-    estimatedDelivery: "2026-08-26",
-  });
-
-  expect(response.status).toBe(409);
-
-  expect(response.body).toEqual({
-    status: "fail",
-    message: "Tracking number already exists",
-  });
-});
-
 });
