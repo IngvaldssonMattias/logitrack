@@ -19,7 +19,7 @@ app.use(express.json());
 
 // Users
 app.use("/api/v1/users", userRouter);
-app.use("/auth", authRoutes);
+app.use("/api/v1/auth", authRoutes);
 
 
 // Swagger documentation

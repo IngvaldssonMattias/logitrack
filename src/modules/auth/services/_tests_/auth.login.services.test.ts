@@ -1,10 +1,31 @@
 import argon2 from "argon2";
-import { User } from "../../../users/models/users.models";
+
+import { db } from "../../../../db";
 import { login } from "../auth.login.services";
+import { AppError } from "../../../../core/errors/AppError";
+
+jest.mock("../../../../db", () => ({
+  db: {
+    query: {
+      users: {
+        findFirst: jest.fn(),
+      },
+    },
+  },
+}));
+
+jest.mock("../../../../core/utils/jwt", () => ({
+  signAccessToken: jest.fn(() => "mock-access-token"),
+}));
+
+jest.mock("../auth.refreshToken.services", () => ({
+  createRefreshToken: jest.fn(() => "mock-refresh-token"),
+}));
 
 describe("login", () => {
   afterEach(() => {
     jest.restoreAllMocks();
+    jest.clearAllMocks();
   });
 
   it("should login a user with valid credentials", async () => {
@@ -12,39 +33,33 @@ describe("login", () => {
     const passwordHash = await argon2.hash(password);
 
     const user = {
-      _id: "123",
+      id: "123",
       name: "John Doe",
       email: "john@example.com",
       passwordHash,
       role: "USER" as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    const select = jest.fn().mockResolvedValue(user);
-
-    jest.spyOn(User, "findOne").mockReturnValue({
-      select,
-    } as never);
+    jest
+      .mocked(db.query.users.findFirst)
+      .mockResolvedValue(user);
 
     const result = await login({
       email: "john@example.com",
       password,
     });
 
-    expect(result).toBe(user);
-
-    expect(User.findOne).toHaveBeenCalledWith({
-      email: "john@example.com",
-    });
-
-    expect(select).toHaveBeenCalledWith("+passwordHash");
+    expect(result.user).toEqual(user);
+    expect(result.accessToken).toBe("mock-access-token");
+    expect(result.refreshToken).toBe("mock-refresh-token");
   });
 
   it("should throw 401 when user does not exist", async () => {
-    const select = jest.fn().mockResolvedValue(null);
-
-    jest.spyOn(User, "findOne").mockReturnValue({
-      select,
-    } as never);
+    jest
+      .mocked(db.query.users.findFirst)
+      .mockResolvedValue(undefined);
 
     await expect(
       login({
@@ -59,18 +74,18 @@ describe("login", () => {
 
   it("should throw 401 when password is incorrect", async () => {
     const user = {
-      _id: "123",
+      id: "123",
       name: "John Doe",
-      email: "[john@example.com](mailto:john@example.com)",
+      email: "john@example.com",
       passwordHash: "stored-password-hash",
       role: "USER" as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    const select = jest.fn().mockResolvedValue(user);
-
-    jest.spyOn(User, "findOne").mockReturnValue({
-      select,
-    } as never);
+    jest
+      .mocked(db.query.users.findFirst)
+      .mockResolvedValue(user);
 
     jest.spyOn(argon2, "verify").mockResolvedValue(false);
 
@@ -92,18 +107,18 @@ describe("login", () => {
 
   it("should find the user by email", async () => {
     const user = {
-      _id: "123",
+      id: "123",
       name: "John Doe",
-      email: "[john@example.com](mailto:john@example.com)",
+      email: "john@example.com",
       passwordHash: "stored-password-hash",
       role: "USER" as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    const select = jest.fn().mockResolvedValue(user);
-
-    jest.spyOn(User, "findOne").mockReturnValue({
-      select,
-    } as never);
+    jest
+      .mocked(db.query.users.findFirst)
+      .mockResolvedValue(user);
 
     jest.spyOn(argon2, "verify").mockResolvedValue(true);
 
@@ -112,27 +127,27 @@ describe("login", () => {
       password: "SecurePassword123!",
     });
 
-    expect(User.findOne).toHaveBeenCalledWith({
-      email: "john@example.com",
-    });
+    expect(db.query.users.findFirst).toHaveBeenCalledTimes(1);
   });
 
   it("should verify the password with Argon2", async () => {
     const user = {
-      _id: "123",
+      id: "123",
       name: "John Doe",
-      email: "[john@example.com](mailto:john@example.com)",
+      email: "john@example.com",
       passwordHash: "stored-password-hash",
       role: "USER" as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    const select = jest.fn().mockResolvedValue(user);
+    jest
+      .mocked(db.query.users.findFirst)
+      .mockResolvedValue(user);
 
-    jest.spyOn(User, "findOne").mockReturnValue({
-      select,
-    } as never);
-
-    const verify = jest.spyOn(argon2, "verify").mockResolvedValue(true);
+    const verify = jest
+      .spyOn(argon2, "verify")
+      .mockResolvedValue(true);
 
     await login({
       email: "john@example.com",

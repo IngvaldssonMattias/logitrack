@@ -1,15 +1,47 @@
 import request from "supertest";
+
 import app from "../../../../app";
-import { User } from "../../../users/models/users.models";
+import { db } from "../../../../db";
+
+jest.mock("../../../../db", () => ({
+  db: {
+    query: {
+      users: {
+        findFirst: jest.fn(),
+      },
+    },
+    insert: jest.fn(),
+  },
+}));
 
 describe("POST /auth/register", () => {
-  beforeEach(async () => {
-    await User.deleteMany({});
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   it("should register a new user", async () => {
+    const insertReturning = jest.fn().mockResolvedValue([
+      {
+        id: "123",
+        name: "John Doe",
+        email: "john@example.com",
+        passwordHash: "hashed-password",
+        role: "USER",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+
+    jest.mocked(db.query.users.findFirst).mockResolvedValue(undefined);
+
+    jest.mocked(db.insert).mockReturnValue({
+      values: jest.fn().mockReturnValue({
+        returning: insertReturning,
+      }),
+    } as never);
+
     const response = await request(app)
-      .post("/auth/register")
+      .post("/api/v1/auth/register")
       .send({
         name: "John Doe",
         email: "john@example.com",
